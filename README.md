@@ -52,3 +52,56 @@ The objective of this lab is to design, train, tune, and evaluate Deep Neural Ne
 1. **End-to-End PyTorch Workflow:** Building custom `Dataset` and `DataLoader` pipelines alongside modular `nn.Module` classes with proper weight initialization (`kaiming_uniform_` and `xavier_uniform_`) is essential for fast convergence.
 2. **Importance of Data Balancing:** Without SMOTE, a classifier on the Predictive Maintenance dataset could achieve 96.5% accuracy by simply predicting `"No Failure"` every time while failing to detect actual breakdowns. Balancing the classes yielded 99%+ F1-score across all 6 failure modes.
 3. **Hyperparameter Tuning & Regularization:** Combining PyTorch with `GridSearchCV` demonstrated the superiority of adaptive learning rate optimizers (`Adam`) over vanilla `SGD` for tabular MLPs. Furthermore, testing Dropout and L1/L2 regularization highlighted that regularization is most beneficial when a network suffers from high variance (overfitting).
+
+
+---
+---
+
+# Deep Learning Lab 2: Computer Vision Architectures in PyTorch (GPU Mode)
+**CNN vs. Faster R-CNN vs. Fine-Tuned AlexNet & VGG16 vs. Vision Transformer (ViT)**
+
+## 📌 Objective
+The objective of this lab is to design, train, fine-tune, and compare multiple Deep Learning architectures for Computer Vision on the **MNIST dataset** using **PyTorch** in **GPU mode (`Tesla T4`)**:
+1. **Part 1:** Build a custom **CNN**, adapt **Faster R-CNN** for digit detection/classification, and fine-tune pretrained **AlexNet** and **VGG16** architectures.
+2. **Part 2:** Implement a **Vision Transformer (ViT)** from scratch (Patchification, Linear Projection, `[CLS]` token, Sinusoidal Positional Encoding, and Multi-Head Self-Attention blocks) and compare its performance with the CNN/R-CNN family.
+
+---
+
+## Environment & Hardware
+* **Framework:** PyTorch & Torchvision
+* **Hardware Accelerator:** NVIDIA Tesla T4 GPU (`cuda:0`) on Google Colab
+* **Dataset:** MNIST (`60,000` training images, `10,000` test images, $28 \times 28$ grayscale digits `0–9`)
+
+---
+
+## Experimental Results & Architecture Comparison
+
+| Model Architecture | Test Accuracy (%) | Macro F1-Score | Test Loss | GPU Training Time (s) | Notes / Configuration |
+| :--- | :---: | :---: | :---: | :---: | :--- |
+| **Custom CNN** | **98.99%** | **0.9899** | **0.0290** | 89.3s | 5 epochs, full 60k train / 10k test ($28 \times 28$) |
+| **Faster R-CNN** | 98.40% | 0.9835 | 0.7823* | 38.5s | 2 epochs, 2k train / 500 test subset (Bounding Box + RoI) |
+| **Vision Transformer (ViT)** | 96.95% | 0.9693 | 0.0992 | 114.3s | 5 epochs, full 60k train / 10k test ($7 \times 7$ patches of $4 \times 4$) |
+| **AlexNet (Fine-Tuned)** | 94.90% | 0.9486 | 0.1608 | **31.6s** | 3 epochs, 10k train / 2k test, frozen backbone ($64 \times 64$) |
+| **VGG16 (Fine-Tuned)** | 93.75% | 0.9394 | 0.2178 | 48.6s | 3 epochs, 10k train / 2k test, frozen backbone ($64 \times 64$) |
+
+*\*Note: Faster R-CNN loss is a multi-task sum of RPN objectness, RPN box regression, RoI classification, and RoI box regression losses.*
+
+---
+
+## Key Findings & Conclusions
+
+### 1. Custom CNN vs. Faster R-CNN
+* **Custom CNN** achieved the highest accuracy (**98.99%**) and lowest loss (**0.0290**).
+* **Faster R-CNN** achieved **98.40%** accuracy while simultaneously localizing each digit with a bounding box. However, because Faster R-CNN evaluates region proposals and bounding-box regressions, it is ~30x more computationally expensive per image than a standard CNN classifier.
+
+### 2. Transfer Learning (`AlexNet` & `VGG16`) vs. Task-Specific CNN
+* Pretrained models like **AlexNet** (`60M` parameters) and **VGG16** (`138M` parameters) are optimized for complex $224 \times 224$ RGB natural scenes. On $28 \times 28$ grayscale digits (upscaled to $64 \times 64$ to survive 5 max-pooling stages) with frozen intermediate feature layers, they achieved **94.90%** and **93.75%** accuracy. A lightweight, custom 2-layer CNN trained end-to-end is both more accurate and vastly more parameter-efficient for MNIST.
+
+### 3. Vision Transformer (ViT) vs. Convolutional Networks
+* Built from scratch, our **ViT** achieved **96.95% accuracy**, outperforming the fine-tuned `AlexNet` and `VGG16` models.
+* Compared to the **Custom CNN (98.99%)**, ViT required slightly more training time (**114.3s** vs. **89.3s**) and had a ~2% lower accuracy after 5 epochs. This illustrates the core difference between architectures: CNNs leverage **inductive biases** (translation invariance and local $3 \times 3$ receptive fields) to learn digit strokes immediately, whereas ViT must learn spatial relationships between $4 \times 4$ patches from scratch using global **Multi-Head Self-Attention**.
+
+---
+
+## Synthesis
+This lab provided hands-on experience implementing the evolution of Computer Vision in PyTorch on GPU: from classic **Convolutional Neural Networks (LeNet-style)** and deep ImageNet backbones (**AlexNet, VGG16**) to two-stage object detectors (**Faster R-CNN**) and modern attention-based **Vision Transformers (ViT)**.
